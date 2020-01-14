@@ -1,5 +1,16 @@
 #!/usr/bin/env python
-"""An elegant cat replacement for a more civilized age."""
+"""A wrapper around the standard cat utility that can read from HTTP, S3, SSH, and more.
+
+Example:
+
+```
+$ echo THIS | cat - https://example.com s3://silo-open-data/README -b | grep -i th.s
+     1  THIS
+    40      <p>This domain is for use in illustrative examples in documents. You may use this
+    52  These data are hosted under the AWS Public Data program, courtesy of Amazon Web Services Inc.
+```
+
+"""
 
 import distutils.spawn
 import io
@@ -9,6 +20,7 @@ import sys
 
 import smart_open
 
+VERSION = '0.0.1'
 MAGIC_FLAG = '-__ANYCAT_MAGIC__'
 CAT_BIN = distutils.spawn.find_executable('cat')
 
@@ -26,6 +38,7 @@ def parse_args():
 
 
 def read_config(uri):
+    """Read the configuration file, return the smart_open opens best suited for the URI."""
     return {}, {}
 
 
@@ -61,6 +74,10 @@ def die():
     sys.exit(1)  # Python exits with error code 1 on EPIPE
 
 
+def print_help():
+    print('anycat version %s, see: <https://github.com/mpenkov/anycat>\n' % VERSION)
+
+
 def my_except_hook(exctype, value, traceback):
     if exctype == KeyboardInterrupt:
         pass
@@ -71,8 +88,18 @@ def my_except_hook(exctype, value, traceback):
 def wrapper_main():
     uris, flags = parse_args()
 
-    if len(uris) == 0:
-        subprocess.check_call(CAT_BIN)
+    #
+    # Process -h, --help and --version flags, because they are special.
+    # Delegate everything else to the actual cat binary.
+    #
+    if '-h' in flags or '--help' in flags:
+        print_help()
+        return subprocess.call([CAT_BIN, '--help'])
+    elif '--version' in flags:
+        print_help()
+        return subprocess.call([CAT_BIN, '--version'])
+    elif len(uris) == 0:
+        return subprocess.call([CAT_BIN] + flags)
     elif MAGIC_FLAG in flags:
         try:
             for uri in uris:
@@ -83,15 +110,31 @@ def wrapper_main():
             #
             die()
     else:
+        #
+        # The first command writes the content of the URIs to standard output.
+        # Next, the actual cat binary deals with flags.  In theory, I could do
+        # all this in a single script, but:
+        #
+        # 1) I'm too lazy to reimplement cat in its entirety.
+        # 2) There are different flavors of cat there, some of them mutually
+        # exclusive.
+        #
         first_command = [sys.executable, __file__, MAGIC_FLAG] + uris
         first = subprocess.Popen(first_command, stdout=subprocess.PIPE)
         cat = subprocess.Popen([CAT_BIN] + flags, stdin=first.stdout)
         cat.wait()
-        sys.exit(0)
+
+        return cat.returncode
 
 
 def standalone_main():
+    #
+    # For people that don't have cat installed locally, for some bizarre
+    # reason, e.g. inferior OS.
+    #
     uris, flags = parse_args()
+    print_help()
+    print('ignoring flags: %s' % ' '.join(flags), file=sys.stderr)
     try:
         for uri in uris:
             write_to_stdout(uri)
@@ -103,7 +146,7 @@ if __name__ == '__main__':
     sys.excepthook = my_except_hook
 
     if CAT_BIN:
-        wrapper_main()
+        sys.exit(wrapper_main())
     else:
         #
         # Inferior O/S without cat.

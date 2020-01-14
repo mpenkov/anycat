@@ -37,6 +37,29 @@ Wouldn't it be better if you could use a single command to do all these things?
 
 Now you can.
 
+```
+anycat /some/local/file
+anycat s3://bucket/key.txt -
+anycat https://example.com
+anycat host cat /path/to/file
+```
+
 # How?
 
-This script uses [smart_open](https://github.com/RaRe-Technologies/smart_open) to do the hard work and read the remote content.
+To install:
+
+    pip install -U anycat
+
+and `anycat` from your shell.
+
+You can save yourself some typing and make a bash [alias](http://tldp.org/LDP/abs/html/aliases.html):
+
+    alias cat=anycat
+
+If you suspect something is broken, you can temporarily revert to the actual `cat` binary by prefixing with a backslash:
+
+    \cat /path/to/file
+
+or remove the alias completely:
+
+    unalias cat
