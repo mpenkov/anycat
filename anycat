@@ -123,8 +123,8 @@ def wrapper_main():
         first = subprocess.Popen(first_command, stdout=subprocess.PIPE)
         cat = subprocess.Popen([CAT_BIN] + flags, stdin=first.stdout)
         cat.wait()
-
-        return cat.returncode
+        first.wait(timeout=5)
+        return first.returncode if first.returncode else cat.returncode
 
 
 def standalone_main():
@@ -146,7 +146,8 @@ if __name__ == '__main__':
     sys.excepthook = my_except_hook
 
     if CAT_BIN:
-        sys.exit(wrapper_main())
+        retval = wrapper_main()
+        sys.exit(retval)
     else:
         #
         # Inferior O/S without cat.

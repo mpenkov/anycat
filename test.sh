@@ -1,11 +1,11 @@
-set -euxo pipefail
+set -ex
 
 #
 # All the below commands should exit without error.
 #
-python anycat.py -h
-python anycat.py --help
-python anycat.py --version
-python anycat.py -AnTv anycat.py README.md
-cat anycat.py | python anycat.py - README.md
-cat anycat.py | python anycat.py - README.md http://example.com s3://commoncrawl/robots.txt
+anycat -h
+anycat --help
+anycat --version
+anycat -AnTv anycat README.md
+cat anycat | anycat - README.md
+cat anycat | anycat - README.md http://example.com s3://commoncrawl/robots.txt
