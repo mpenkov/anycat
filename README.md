@@ -38,10 +38,10 @@ Wouldn't it be better if you could use a single command to do all these things?
 Now you can.
 
 ```
-anycat /some/local/file
+anycat file:///some/local/file
 anycat s3://bucket/key.txt -
 anycat https://example.com
-anycat host cat /path/to/file
+anycat ssh://host:/path/to/file
 ```
 
 # How?
